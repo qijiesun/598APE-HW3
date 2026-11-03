@@ -18,3 +18,13 @@
 
 # Compiled handouts
 /handout/*.pdf
+
+# Outputs
+sandpile.exe
+identity.png
+
+# Flamegraph
+flamegraph.svg
+out.folded
+out.perf
+perf.data

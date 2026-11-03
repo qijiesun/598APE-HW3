@@ -13,6 +13,16 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+typedef struct {
+  bool o1;
+  bool o2;
+  bool o3;
+  bool o4;
+  bool o5;
+  bool o6;
+} Flags;
+Flags optimizations = {0};
+
 static void die(const char *s) {
   fprintf(stderr, "%s\n", s);
   exit(1);
@@ -113,9 +123,32 @@ void find_identity() {
   stabilize();
 }
 
+void parse_optimization(const char *optimization) {
+  if (strcmp(optimization, "all") == 0) {
+    optimizations.o1 = optimizations.o2 = optimizations.o4 = optimizations.o5 = optimizations.o6 = true;
+    return;
+  }
+  char *copy = strdup(optimization);
+  char *token = strtok(copy, "+");
+  while (token != NULL) {
+    if (strcmp(token, "o1") == 0) optimizations.o1 = true;
+    else if (strcmp(token, "o2") == 0) optimizations.o2 = true;
+    else if (strcmp(token, "o3") == 0) optimizations.o3 = true;
+    else if (strcmp(token, "o4") == 0) optimizations.o4 = true;
+    else if (strcmp(token, "o5") == 0) optimizations.o5 = true;
+    else if (strcmp(token, "o6") == 0) optimizations.o6 = true;
+    else {
+      free(copy);
+      die("Unknown optimization flag");
+    }
+    token = strtok(NULL, "+");
+  }
+  free(copy);
+}
+
 int main(int argc, char **argv) {
-  if (argc < 2 || argc > 2) {
-    fprintf(stderr, "Usage: %s N\n", argv[0]);
+  if (argc < 2 || argc > 3) {
+    fprintf(stderr, "Usage: %s N [optimizations]\n", argv[0]);
     return EXIT_FAILURE;
   }
   char *end;
@@ -124,13 +157,22 @@ int main(int argc, char **argv) {
       parsed > INT32_MAX)
     die("grid size must be a positive int");
   N = (int)parsed;
+  if (argc == 3) {
+    parse_optimization(argv[2]);
+  }
 
   grid = (int **)malloc(N * sizeof(int *));
   for (int i = 0; i < N; ++i) {
     grid[i] = (int *)malloc(N * sizeof(int));
   }
 
+  printf("Running test\n");
+  struct timeval start, stop;
+  gettimeofday(&start, NULL);
   find_identity();
+  gettimeofday(&stop, NULL);
+  float elapsed = (stop.tv_sec - start.tv_sec) + 1e-6 * (stop.tv_usec - start.tv_usec);
+  printf("Time for size %d: %0.6f seconds\n", N, elapsed);
 
   render("identity.png");
   for (int i = 0; i < N; ++i) {
