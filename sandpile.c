@@ -82,14 +82,32 @@ static void render(char *filename) {
   free(pixels);
 }
 
+static int *left;
+static int *right;
+static void bounds() {
+  left = (int *)malloc(N * sizeof(int));
+  right = (int *)malloc(N * sizeof(int));
+  for (int i = 0; i < N; ++i) {
+    left[i] = -1;
+    for (int j = 0; j <= MAX(i, N - 1 - i); ++j) {
+      if ((i - N / 2) * (i - N / 2) + (j - N / 2) * (j - N / 2) <=
+          (N / 2) * (N / 2)) {
+        if (left[i] == -1) {
+          left[i] = j;
+        }
+        right[i] = j;
+      }
+    }
+  }
+}
+
 static void stabilize() {
   int changed = 0;
-  do {
-    changed = 0;
-    for (int i = 0; i < N; ++i) {
-      for (int j = 0; j <= MAX(i, N - 1 - i); ++j) {
-        if ((i - N / 2) * (i - N / 2) + (j - N / 2) * (j - N / 2) <=
-            (N / 2) * (N / 2)) {
+  if (optimizations.o1) {
+    do {
+      changed = 0;
+      for (int i = 0; i < N; ++i) {
+        for (int j = left[i]; j <= right[i]; ++j) {
           if (grid[i][j] < 4)
             continue;
           changed = 1; // topple it
@@ -104,11 +122,37 @@ static void stabilize() {
             grid[i][j + 1]++;
         }
       }
-    }
-  } while (changed);
+    } while (changed);
+  } else {
+    do {
+      changed = 0;
+      for (int i = 0; i < N; ++i) {
+        for (int j = 0; j <= MAX(i, N - 1 - i); ++j) {
+          if ((i - N / 2) * (i - N / 2) + (j - N / 2) * (j - N / 2) <=
+              (N / 2) * (N / 2)) {
+            if (grid[i][j] < 4)
+              continue;
+            changed = 1; // topple it
+            grid[i][j] -= 4;
+            if (i > 0)
+              grid[i - 1][j]++;
+            if (j > 0)
+              grid[i][j - 1]++;
+            if (i < N - 1)
+              grid[i + 1][j]++;
+            if (j < N - 1)
+              grid[i][j + 1]++;
+          }
+        }
+      }
+    } while (changed);
+  }
 }
 
 void find_identity() {
+  if (optimizations.o1) {
+    bounds();
+  }
   for (int i = 0; i < N; ++i) {
     for (int j = 0; j < N; ++j) {
       grid[i][j] = 6;
@@ -148,7 +192,7 @@ void parse_optimization(const char *optimization) {
 
 int main(int argc, char **argv) {
   if (argc < 2 || argc > 3) {
-    fprintf(stderr, "Usage: %s N [optimizations]\n", argv[0]);
+    fprintf(stderr, "Usage: %s N [optimization]\n", argv[0]);
     return EXIT_FAILURE;
   }
   char *end;
