@@ -111,6 +111,19 @@ static void stabilize() {
           if (grid[i][j] < 4)
             continue;
           changed = 1; // topple it
+          if (optimizations.o2) {
+            int topples = grid[i][j] / 4;
+            grid[i][j] %= 4;
+            if (i > 0)
+              grid[i - 1][j] += topples;
+            if (j > 0)
+              grid[i][j - 1] += topples;
+            if (i < N - 1)
+              grid[i + 1][j] += topples;
+            if (j < N - 1)
+              grid[i][j + 1] += topples;
+            continue;
+          }
           grid[i][j] -= 4;
           if (i > 0)
             grid[i - 1][j]++;
@@ -133,6 +146,19 @@ static void stabilize() {
             if (grid[i][j] < 4)
               continue;
             changed = 1; // topple it
+            if (optimizations.o2) {
+              int topples = grid[i][j] / 4;
+              grid[i][j] %= 4;
+              if (i > 0)
+                grid[i - 1][j] += topples;
+              if (j > 0)
+                grid[i][j - 1] += topples;
+              if (i < N - 1)
+                grid[i + 1][j] += topples;
+              if (j < N - 1)
+                grid[i][j + 1] += topples;
+              continue;
+            }
             grid[i][j] -= 4;
             if (i > 0)
               grid[i - 1][j]++;
