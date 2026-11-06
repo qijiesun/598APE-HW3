@@ -14,6 +14,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 typedef struct {
+  bool original;
   bool o1;
   bool o2;
   bool o3;
@@ -103,40 +104,7 @@ static void bounds() {
 
 static void stabilize() {
   int changed = 0;
-  if (optimizations.o1) {
-    do {
-      changed = 0;
-      for (int i = 0; i < N; ++i) {
-        for (int j = left[i]; j <= right[i]; ++j) {
-          if (grid[i][j] < 4)
-            continue;
-          changed = 1; // topple it
-          if (optimizations.o2) {
-            int topples = grid[i][j] / 4;
-            grid[i][j] %= 4;
-            if (i > 0)
-              grid[i - 1][j] += topples;
-            if (j > 0)
-              grid[i][j - 1] += topples;
-            if (i < N - 1)
-              grid[i + 1][j] += topples;
-            if (j < N - 1)
-              grid[i][j + 1] += topples;
-            continue;
-          }
-          grid[i][j] -= 4;
-          if (i > 0)
-            grid[i - 1][j]++;
-          if (j > 0)
-            grid[i][j - 1]++;
-          if (i < N - 1)
-            grid[i + 1][j]++;
-          if (j < N - 1)
-            grid[i][j + 1]++;
-        }
-      }
-    } while (changed);
-  } else {
+  if (optimizations.original) {
     do {
       changed = 0;
       for (int i = 0; i < N; ++i) {
@@ -146,19 +114,6 @@ static void stabilize() {
             if (grid[i][j] < 4)
               continue;
             changed = 1; // topple it
-            if (optimizations.o2) {
-              int topples = grid[i][j] / 4;
-              grid[i][j] %= 4;
-              if (i > 0)
-                grid[i - 1][j] += topples;
-              if (j > 0)
-                grid[i][j - 1] += topples;
-              if (i < N - 1)
-                grid[i + 1][j] += topples;
-              if (j < N - 1)
-                grid[i][j + 1] += topples;
-              continue;
-            }
             grid[i][j] -= 4;
             if (i > 0)
               grid[i - 1][j]++;
@@ -172,11 +127,76 @@ static void stabilize() {
         }
       }
     } while (changed);
+  } else if (optimizations.o3) {
+    do {
+      changed = 0;
+      for (int phase = 0; phase < 3; ++phase) {
+        #pragma omp parallel for reduction(|:changed)
+        for (int i = phase; i < N; i += 3) {
+          for (int j = left[i]; j <= right[i]; ++j) {
+            if (grid[i][j] < 4)
+              continue;
+            changed = 1;
+            int topples = grid[i][j] / 4;
+            grid[i][j] %= 4;
+            if (i > 0)
+              grid[i - 1][j] += topples;
+            if (j > 0)
+              grid[i][j - 1] += topples;
+            if (i < N - 1)
+              grid[i + 1][j] += topples;
+            if (j < N - 1)
+              grid[i][j + 1] += topples;
+          }
+        }
+      }
+    } while (changed);
+  } else if (optimizations.o2) {
+    do {
+      changed = 0;
+      for (int i = 0; i < N; ++i) {
+        for (int j = left[i]; j <= right[i]; ++j) {
+          if (grid[i][j] < 4)
+            continue;
+          changed = 1;
+          int topples = grid[i][j] / 4;
+          grid[i][j] %= 4;
+          if (i > 0)
+            grid[i - 1][j] += topples;
+          if (j > 0)
+            grid[i][j - 1] += topples;
+          if (i < N - 1)
+            grid[i + 1][j] += topples;
+          if (j < N - 1)
+            grid[i][j + 1] += topples;
+        }
+      }
+    } while (changed);
+  } else if (optimizations.o1) {
+    do {
+      changed = 0;
+      for (int i = 0; i < N; ++i) {
+        for (int j = left[i]; j <= right[i]; ++j) {
+          if (grid[i][j] < 4)
+            continue;
+          changed = 1;
+          grid[i][j] -= 4;
+          if (i > 0)
+            grid[i - 1][j]++;
+          if (j > 0)
+            grid[i][j - 1]++;
+          if (i < N - 1)
+            grid[i + 1][j]++;
+          if (j < N - 1)
+            grid[i][j + 1]++;
+        }
+      }
+    } while (changed);
   }
 }
 
 void find_identity() {
-  if (optimizations.o1) {
+  if (optimizations.o1 || optimizations.o2 || optimizations.o3) {
     bounds();
   }
   for (int i = 0; i < N; ++i) {
@@ -191,11 +211,15 @@ void find_identity() {
     }
   }
   stabilize();
+  if (left != NULL || right != NULL) {
+    free(left);
+    free(right);
+  }
 }
 
 void parse_optimization(const char *optimization) {
   if (strcmp(optimization, "all") == 0) {
-    optimizations.o1 = optimizations.o2 = optimizations.o4 = optimizations.o5 = optimizations.o6 = true;
+    optimizations.o1 = optimizations.o2 = optimizations.o3 = optimizations.o4 = optimizations.o5 = optimizations.o6 = true;
     return;
   }
   char *copy = strdup(optimization);
@@ -229,6 +253,8 @@ int main(int argc, char **argv) {
   N = (int)parsed;
   if (argc == 3) {
     parse_optimization(argv[2]);
+  } else {
+    optimizations.original = true;
   }
 
   grid = (int **)malloc(N * sizeof(int *));
