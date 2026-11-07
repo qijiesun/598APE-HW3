@@ -127,6 +127,31 @@ static void stabilize() {
         }
       }
     } while (changed);
+  } else if (optimizations.o4) {
+    int half = N / 2;
+    do {
+      changed = 0;
+      for (int phase = 0; phase < 3; ++phase) {
+        #pragma omp parallel for reduction(|:changed)
+        for (int i = phase; i <= half; i += 3) {
+          for (int j = left[i]; j <= right[i]; ++j) {
+            if (grid[i][j] < 4)
+              continue;
+            changed = 1;
+            int topples = grid[i][j] / 4;
+            grid[i][j] %= 4;
+            if (i > 0)
+              grid[i - 1][j] += topples;
+            if (j > 0)
+              grid[i][j - 1] += topples;
+            if (i < half)
+              grid[i + 1][j] += (i != half - 1) ? topples : 2 * topples;
+            if (j < N - 1)
+              grid[i][j + 1] += topples;
+          }
+        }
+      }
+    } while (changed);
   } else if (optimizations.o3) {
     do {
       changed = 0;
@@ -196,7 +221,7 @@ static void stabilize() {
 }
 
 void find_identity() {
-  if (optimizations.o1 || optimizations.o2 || optimizations.o3) {
+  if (optimizations.o1 || optimizations.o2 || optimizations.o3 || optimizations.o4) {
     bounds();
   }
   for (int i = 0; i < N; ++i) {
@@ -211,6 +236,12 @@ void find_identity() {
     }
   }
   stabilize();
+  if (optimizations.o4) {
+    int half = N / 2;
+    for (int i = 0; i < half; ++i) {
+      memcpy(grid[N - 1 - i], grid[i], N * sizeof(int));
+    }
+  }
   if (left != NULL || right != NULL) {
     free(left);
     free(right);
@@ -255,6 +286,9 @@ int main(int argc, char **argv) {
     parse_optimization(argv[2]);
   } else {
     optimizations.original = true;
+  }
+  if (N % 2 == 0 && optimizations.o4) {
+    die("grid size must be odd for o4");
   }
 
   grid = (int **)malloc(N * sizeof(int *));
