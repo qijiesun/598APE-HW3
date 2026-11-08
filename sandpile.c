@@ -20,7 +20,6 @@ typedef struct {
   bool o3;
   bool o4;
   bool o5;
-  bool o6;
 } Flags;
 Flags optimizations = {0};
 
@@ -250,7 +249,7 @@ void find_identity() {
 
 void parse_optimization(const char *optimization) {
   if (strcmp(optimization, "all") == 0) {
-    optimizations.o1 = optimizations.o2 = optimizations.o3 = optimizations.o4 = optimizations.o5 = optimizations.o6 = true;
+    optimizations.o1 = optimizations.o2 = optimizations.o3 = optimizations.o4 = optimizations.o5 = true;
     return;
   }
   char *copy = strdup(optimization);
@@ -261,7 +260,6 @@ void parse_optimization(const char *optimization) {
     else if (strcmp(token, "o3") == 0) optimizations.o3 = true;
     else if (strcmp(token, "o4") == 0) optimizations.o4 = true;
     else if (strcmp(token, "o5") == 0) optimizations.o5 = true;
-    else if (strcmp(token, "o6") == 0) optimizations.o6 = true;
     else {
       free(copy);
       die("Unknown optimization flag");

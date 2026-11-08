@@ -1,45 +1,44 @@
-# CS598APE HW3
+# 598APE-HW2
 
-This repository contains code for homework 3 of CS598APE. It is relatively
-simple in comparison to HW1 and HW2 to ensure you have enough time to work on
-the course project. 
+## Tools
 
-`sandpile.c` contains the implementation of finding the identity element of a 2D
-abelian sandpile.
+This program assumes the following are installed on your machine:
+* gcc
+* make
 
-![Identity sandpile on a 1001x1001 pacman grid](identity-ref.png)
+If any of the above is missing, you can run the following commands in a terminal:
+* `sudo apt install build-essential`
 
-*Identity sandpile on a 1001x1001 pacman grid*
+## Instructions
 
+After pulling the code, open a terminal in the folder the code was pulled into.\
+Run `make`.
 
-To compile the program, run:
+### Default program usage:
+```
+./sandpile.exe <N>
+```
+N defines the 2D grid size.
 
-```bash
-make all
+### Optimized program usage:
+```
+./sandpile.exe <N> <optimizations>
+```
+The optimizations argument should be a chain of optimization flags connected with a "+" character.\
+Note that although each optimization is independent in theory, the program implements each one on top of previous ones, so all preceding optimizations should be included.
+
+Examples:
+```
+./genetic_benchmark <test name> o1
+```
+```
+./genetic_benchmark <test name> o1+o2+o3+o4
 ```
 
-To clean existing build artifacts, run:
+## Optimizations
 
-```bash
-make clean
-```
-
-Usage (after compiling):
-
-```bash
-./sandpile.exe <N> 
-```
-
-where `N` is the grid size
-
-Consider speeding up the generation of this 1001x1001 identity sandpile (which
-takes approximately ~3m 40s on my local laptop under the default setup)
-
-```bash
-./sandpile.exe 1001
-```
-
-For an optional, ungraded challenge, see how large a sandpile you can compute
-on the course VMs and report the grid size and runtime. There is no prescribed
-upper limit on `N` for this challenge.
-
+Optimization flags correspond to the following:
+* o1: precompute the bounds for the Pac-Man shape.
+* o2: topple all of the toppleable grains at once.
+* o3: parallelize with OpenMP.
+* o4: mirror the stabilized top half to the bottom half.
